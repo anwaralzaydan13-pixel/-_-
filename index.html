@@ -1,0 +1,619 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>حاسبة الإقامة</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#1F6F78">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="حاسبة الإقامة">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<style>
+  :root{
+    --bg: #FAF6EE;
+    --ink: #2B2320;
+    --muted: #7A7166;
+    --teal: #1F6F78;
+    --teal-dark: #164F56;
+    --gold: #C9A227;
+    --card: #FFFFFF;
+    --line: #E7DFCF;
+    --danger: #B54A3F;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: "Segoe UI", Tahoma, "Geeza Pro", Arial, sans-serif;
+    min-height:100vh;
+    padding: 24px 16px 60px;
+  }
+  .wrap{ max-width: 640px; margin: 0 auto; }
+
+  header{ text-align:center; margin-bottom: 22px; }
+  .eyebrow{
+    font-size: 12px; letter-spacing: 2px; color: var(--teal-dark);
+    text-transform: uppercase; font-weight: 700; margin-bottom: 6px;
+  }
+  .sub{ color: var(--muted); font-size: 14px; }
+
+  .period-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 18px;
+  }
+  .period-card .label{ font-size: 13px; color: var(--muted); margin-bottom: 8px; font-weight: 600;}
+  .row{ display:flex; gap: 10px; }
+  .row > div{ flex:1; }
+
+  label.field-label{ display:block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  input[type=date], input[type=text]{
+    width:100%;
+    padding: 10px 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: #FFFDF9;
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+  }
+  input:focus{ outline: 2px solid var(--teal); outline-offset: 1px; }
+
+  .total-tile{
+    position: relative;
+    background: linear-gradient(135deg, var(--teal), var(--teal-dark));
+    color: white;
+    border-radius: 16px;
+    padding: 26px 20px;
+    text-align:center;
+    margin-bottom: 20px;
+    overflow: hidden;
+  }
+  .total-tile::before{
+    content:"";
+    position:absolute; inset:0;
+    background-image:
+      linear-gradient(45deg, rgba(201,162,39,0.10) 25%, transparent 25%),
+      linear-gradient(-45deg, rgba(201,162,39,0.10) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, rgba(201,162,39,0.10) 75%),
+      linear-gradient(-45deg, transparent 75%, rgba(201,162,39,0.10) 75%);
+    background-size: 28px 28px;
+    background-position: 0 0, 0 14px, 14px -14px, -14px 0px;
+    opacity: .5;
+  }
+  .total-tile .num{ position:relative; font-size: 52px; font-weight: 900; line-height:1; font-variant-numeric: tabular-nums;}
+  .total-tile .lbl{ position:relative; font-size: 14px; margin-top: 6px; opacity: .9;}
+  .total-tile .note{ position:relative; font-size: 12px; margin-top: 10px; opacity: .75;}
+
+  .trip{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 10px;
+    position: relative;
+  }
+  .trip .row{ margin-bottom: 8px; }
+  .trip .days-badge{
+    display:inline-block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--teal-dark);
+    background: #E7F1EF;
+    padding: 3px 9px;
+    border-radius: 20px;
+    margin-top: 4px;
+  }
+  .trip .warn{
+    font-size: 12px; color: var(--danger); margin-top: 4px;
+  }
+  .remove-btn{
+    position:absolute; top: 10px; left: 10px;
+    background: none; border: none; color: var(--muted);
+    font-size: 18px; cursor:pointer; line-height:1; padding: 4px;
+  }
+  .remove-btn:hover{ color: var(--danger); }
+
+  .add-btn{
+    width:100%;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px dashed var(--teal);
+    background: transparent;
+    color: var(--teal-dark);
+    font-weight: 700;
+    font-size: 14px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-btn:hover{ background: #F0F7F6; }
+
+  .overlap-banner{
+    background: #FBEFEA;
+    border: 1px solid #EBC9BC;
+    color: var(--danger);
+    font-size: 12px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 14px;
+  }
+
+  .save-card{
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 14px 16px;
+    margin-bottom: 18px;
+    display:flex;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .save-card .save-info{ font-size: 12px; color: var(--muted); }
+  .save-card .save-info strong{ color: var(--ink); display:block; font-size: 14px; margin-bottom: 2px;}
+  .save-actions{ display:flex; gap: 8px; }
+  .btn{
+    border-radius: 9px;
+    padding: 9px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    border: 1px solid var(--teal);
+    background: var(--teal);
+    color: white;
+    white-space: nowrap;
+  }
+  .btn:hover{ background: var(--teal-dark); border-color: var(--teal-dark); }
+  .btn.secondary{
+    background: white;
+    color: var(--teal-dark);
+  }
+  .btn.secondary:hover{ background: #F0F7F6; }
+  .save-actions input[type=file]{ display:none; }
+
+  .save-reminder{
+    display:none;
+    background: #FFF7E3;
+    border: 1px solid #E6CE86;
+    color: #7A5B12;
+    font-size: 13px;
+    border-radius: 12px;
+    padding: 12px 14px;
+    margin-bottom: 16px;
+    align-items:center;
+    justify-content: space-between;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  .save-reminder.show{ display:flex; }
+  .save-reminder .msg{ flex:1; min-width: 180px; }
+  .save-reminder .actions{ display:flex; gap: 8px; align-items:center; }
+  .save-reminder button.dismiss{
+    background: none; border:none; color:#7A5B12; font-size: 16px; cursor:pointer; padding: 2px 4px;
+  }
+
+  footer{
+    text-align:center; color: var(--muted); font-size: 12px; margin-top: 26px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="eyebrow">حاسبة الإقامة</div>
+    <div class="sub">حدّد فترة الماجستير ثم أضف كل رحلة إلى إيران — والحاسبة تحسب الأيام الفعلية داخل تلك الفترة، بدون احتساب التداخلات مرتين.</div>
+  </header>
+
+  <div class="save-card">
+    <div class="save-info">
+      <strong>حفظ البيانات</strong>
+      يقوم الزر بتنزيل ملف إكسل يحتوي على كل بياناتك وصور الجوازات. بعض المتصفحات قد تضيف رقماً للاسم عند التنزيل المتكرر (مثل (1))، يمكنك حينها حذف النسخ القديمة يدوياً من مجلد التنزيلات.
+    </div>
+    <div class="save-actions">
+      <button class="btn" id="exportBtn">⬇️ حفظ نسخة إكسل</button>
+      <label class="btn secondary" id="importLabel">
+        ⬆️ استيراد نسخة
+        <input type="file" accept=".xlsx,.xls" id="importInput">
+      </label>
+    </div>
+  </div>
+
+  <div class="save-reminder" id="saveReminder">
+    <div class="msg">📌 أضفت رحلة جديدة — لا تنسَ حفظ نسخة من بياناتك حتى لا تفقدها عند إغلاق الصفحة.</div>
+    <div class="actions">
+      <button class="btn" id="reminderSaveBtn">حفظ الآن</button>
+      <button class="dismiss" id="reminderDismissBtn" title="إغلاق">✕</button>
+    </div>
+  </div>
+
+  <div class="period-card">
+    <div class="label">فترة الماجستير</div>
+    <div class="row">
+      <div>
+        <label class="field-label">تاريخ البداية</label>
+        <input type="date" id="periodStart">
+      </div>
+      <div>
+        <label class="field-label">تاريخ النهاية</label>
+        <input type="date" id="periodEnd">
+      </div>
+    </div>
+  </div>
+
+  <div class="total-tile">
+    <div class="num" id="totalDays">0</div>
+    <div class="lbl">إجمالي الأيام في إيران</div>
+    <div class="note" id="totalNote">أضف رحلاتك أدناه</div>
+  </div>
+
+  <div id="overlapBanner" class="overlap-banner" style="display:none;">
+    ⚠️ بعض الرحلات متداخلة زمنياً — تم احتساب الأيام المشتركة مرة واحدة فقط في الإجمالي.
+  </div>
+
+  <div id="trips"></div>
+
+  <button class="add-btn" id="addTripBtn">+ إضافة رحلة إلى إيران</button>
+
+  <footer>يتم حفظ البيانات مؤقتاً فقط في هذه الجلسة.</footer>
+</div>
+
+<script>
+let trips = [
+  { start: "", end: "", entryPage: "", exitPage: "" }
+];
+
+const tripsEl = document.getElementById('trips');
+const totalDaysEl = document.getElementById('totalDays');
+const totalNoteEl = document.getElementById('totalNote');
+const overlapBanner = document.getElementById('overlapBanner');
+const periodStartEl = document.getElementById('periodStart');
+const periodEndEl = document.getElementById('periodEnd');
+
+function parseDate(str){
+  if(!str) return null;
+  const d = new Date(str + "T00:00:00");
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// عدد أيام الإقامة الفعلي: الفرق بين تاريخ الخروج وتاريخ الدخول
+// (يوم الدخول ويوم الخروج يُحتسبان كيوم إقامة واحد، وليس يومين)
+function residenceDays(a, b){
+  return Math.round((b - a) / (1000*60*60*24));
+}
+
+function clampToPeriod(start, end){
+  const pStart = parseDate(periodStartEl.value);
+  const pEnd = parseDate(periodEndEl.value);
+  if(!start || !end) return null;
+  let s = start, e = end;
+  if(pStart && s < pStart) s = pStart;
+  if(pEnd && e > pEnd) e = pEnd;
+  if(s > e) return null;
+  return {s, e};
+}
+
+function render(){
+  tripsEl.innerHTML = "";
+  trips.forEach((trip, idx) => {
+    const div = document.createElement('div');
+    div.className = 'trip';
+
+    const start = parseDate(trip.start);
+    const end = parseDate(trip.end);
+    let badgeHtml = "";
+    let warnHtml = "";
+
+    if(start && end && start > end){
+      warnHtml = `<div class="warn">تاريخ الخروج قبل تاريخ الدخول</div>`;
+    } else if(start && end){
+      const clamped = clampToPeriod(start, end);
+      if(clamped){
+        const d = residenceDays(clamped.s, clamped.e);
+        badgeHtml = `<span class="days-badge">${d} يوم ضمن فترة الماجستير</span>`;
+      } else {
+        warnHtml = `<div class="warn">هذه الرحلة خارج فترة الماجستير المحددة</div>`;
+      }
+    }
+
+    div.innerHTML = `
+      ${trips.length > 1 ? `<button class="remove-btn" data-idx="${idx}" title="حذف">✕</button>` : ""}
+      <div class="row">
+        <div>
+          <label class="field-label">تاريخ الدخول</label>
+          <input type="date" data-idx="${idx}" data-field="start" value="${trip.start || ""}">
+        </div>
+        <div>
+          <label class="field-label">تاريخ الخروج</label>
+          <input type="date" data-idx="${idx}" data-field="end" value="${trip.end || ""}">
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label class="field-label">رقم صفحة ختم الدخول</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="entryPage" placeholder="مثال: 12" value="${trip.entryPage || ""}">
+        </div>
+        <div>
+          <label class="field-label">رقم صفحة ختم الخروج</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="exitPage" placeholder="مثال: 13" value="${trip.exitPage || ""}">
+        </div>
+      </div>
+      ${badgeHtml}
+      ${warnHtml}
+    `;
+    tripsEl.appendChild(div);
+  });
+
+  // date inputs
+  tripsEl.querySelectorAll('input[type=date]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-idx'));
+      const field = e.target.getAttribute('data-field');
+      trips[idx][field] = e.target.value;
+      render();
+    });
+  });
+
+  // page number inputs
+  tripsEl.querySelectorAll('.page-input').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-idx'));
+      const field = e.target.getAttribute('data-field');
+      trips[idx][field] = e.target.value;
+    });
+  });
+
+  // remove trip
+  tripsEl.querySelectorAll('.remove-btn').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      const idx = parseInt(e.currentTarget.getAttribute('data-idx'));
+      trips.splice(idx, 1);
+      render();
+    });
+  });
+
+  computeTotal();
+}
+
+function computeTotal(){
+  let intervals = [];
+  trips.forEach(trip => {
+    const start = parseDate(trip.start);
+    const end = parseDate(trip.end);
+    if(start && end && start <= end){
+      const clamped = clampToPeriod(start, end);
+      if(clamped) intervals.push([clamped.s.getTime(), clamped.e.getTime()]);
+    }
+  });
+
+  intervals.sort((a,b) => a[0]-b[0]);
+
+  let merged = [];
+  let hadOverlap = false;
+  for(const iv of intervals){
+    if(merged.length === 0){
+      merged.push(iv);
+    } else {
+      const last = merged[merged.length-1];
+      if(iv[0] <= last[1]){
+        hadOverlap = true;
+        last[1] = Math.max(last[1], iv[1]);
+      } else {
+        merged.push(iv);
+      }
+    }
+  }
+
+  let total = 0;
+  merged.forEach(([s,e]) => {
+    total += Math.round((e - s) / (1000*60*60*24));
+  });
+
+  totalDaysEl.textContent = total;
+  overlapBanner.style.display = hadOverlap ? 'block' : 'none';
+
+  if(!periodStartEl.value || !periodEndEl.value){
+    totalNoteEl.textContent = "حدّد فترة الماجستير أعلاه لحساب دقيق";
+  } else if(intervals.length === 0){
+    totalNoteEl.textContent = "أضف رحلاتك أدناه";
+  } else {
+    totalNoteEl.textContent = `${merged.length} فترة/فترات محتسبة`;
+  }
+}
+
+document.getElementById('addTripBtn').addEventListener('click', () => {
+  trips.push({ start: "", end: "", entryPage: "", exitPage: "" });
+  render();
+  showSaveReminder();
+});
+
+periodStartEl.addEventListener('input', render);
+periodEndEl.addEventListener('input', render);
+
+// ---- حفظ البيانات في ملف إكسل واستيرادها (بما في ذلك الصور) ----
+const saveReminderEl = document.getElementById('saveReminder');
+
+function showSaveReminder(){
+  saveReminderEl.classList.add('show');
+}
+function hideSaveReminder(){
+  saveReminderEl.classList.remove('show');
+}
+
+async function buildWorkbookBuffer(){
+  const wb = new ExcelJS.Workbook();
+  const ws = wb.addWorksheet("بيانات الإقامة", { views: [{ rightToLeft: true }] });
+
+  ws.columns = [
+    { width: 6 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
+    { width: 16 },
+  ];
+
+  const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F6F78' } };
+  const headerFont = { bold: true, color: { argb: 'FFFFFFFF' } };
+  const border = { style: 'thin', color: { argb: 'FFE0D7C4' } };
+  const fullBorder = { top: border, bottom: border, left: border, right: border };
+
+  const r1 = ws.addRow(["فترة الماجستير - من", periodStartEl.value || ""]);
+  r1.getCell(1).font = { bold: true, color: { argb: 'FF164F56' } };
+  r1.getCell(1).alignment = { horizontal: 'right' };
+  r1.getCell(2).alignment = { horizontal: 'right' };
+  const r2 = ws.addRow(["فترة الماجستير - إلى", periodEndEl.value || ""]);
+  r2.getCell(1).font = { bold: true, color: { argb: 'FF164F56' } };
+  r2.getCell(1).alignment = { horizontal: 'right' };
+  r2.getCell(2).alignment = { horizontal: 'right' };
+  ws.addRow([]);
+
+  const headerRow = ws.addRow(["#", "تاريخ الدخول", "تاريخ الخروج", "عدد الأيام", "رقم صفحة الدخول", "رقم صفحة الخروج"]);
+  headerRow.eachCell(cell => {
+    cell.fill = headerFill;
+    cell.font = headerFont;
+    cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    cell.border = fullBorder;
+  });
+
+  let total = 0;
+  trips.forEach((trip, idx) => {
+    const start = parseDate(trip.start);
+    const end = parseDate(trip.end);
+    let days = "";
+    if(start && end && start <= end){
+      const clamped = clampToPeriod(start, end);
+      if(clamped){
+        days = residenceDays(clamped.s, clamped.e);
+        total += days;
+      }
+    }
+    const row = ws.addRow([idx + 1, trip.start || "", trip.end || "", days, trip.entryPage || "", trip.exitPage || ""]);
+    row.eachCell(cell => {
+      cell.border = fullBorder;
+      cell.alignment = { horizontal: 'center', vertical: 'middle' };
+    });
+  });
+
+  ws.addRow([]);
+  const totalRow = ws.addRow(["الإجمالي", "", "", total]);
+  totalRow.font = { bold: true };
+  totalRow.eachCell(cell => { cell.border = fullBorder; cell.alignment = { horizontal: 'right' }; });
+
+  return await wb.xlsx.writeBuffer();
+}
+
+async function exportData(){
+  let buffer;
+  try{
+    buffer = await buildWorkbookBuffer();
+  } catch(err){
+    console.error(err);
+    alert("حدث خطأ أثناء إنشاء ملف الإكسل.");
+    return;
+  }
+
+  try{
+    const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = "بيانات-الاقامة.xlsx";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    hideSaveReminder();
+  } catch(err){
+    console.error(err);
+    alert("تعذر حفظ الملف.");
+  }
+}
+
+async function importData(file){
+  try{
+    const buffer = await file.arrayBuffer();
+    const wb = new ExcelJS.Workbook();
+    await wb.xlsx.load(buffer);
+    const ws = wb.worksheets[0];
+
+    const periodStart = (ws.getRow(1).getCell(2).text || "").trim();
+    const periodEnd = (ws.getRow(2).getCell(2).text || "").trim();
+
+    let headerRowNum = 4;
+    if((ws.getRow(headerRowNum).getCell(1).text || "").trim() !== "#"){
+      for(let r = 1; r <= 10; r++){
+        if((ws.getRow(r).getCell(1).text || "").trim() === "#"){ headerRowNum = r; break; }
+      }
+    }
+
+    let newTrips = [];
+    let r = headerRowNum + 1;
+    while(true){
+      const row = ws.getRow(r);
+      const first = (row.getCell(1).text || "").trim();
+      if(!first || first === "الإجمالي") break;
+      newTrips.push({
+        start: (row.getCell(2).text || "").trim(),
+        end: (row.getCell(3).text || "").trim(),
+        entryImg: null,
+        exitImg: null,
+        entryPage: (row.getCell(6).text || "").trim(),
+        exitPage: (row.getCell(8).text || "").trim()
+      });
+      r++;
+    }
+
+    // استخراج الصور وربطها بالرحلة الصحيحة بحسب موضعها
+    const images = ws.getImages ? ws.getImages() : [];
+    images.forEach(img => {
+      const media = wb.model.media.find(m => m.index === img.imageId) || wb.model.media[img.imageId];
+      if(!media || !media.buffer) return;
+      const base64 = `data:image/${media.extension};base64,${arrayBufferToBase64(media.buffer)}`;
+      const anchorRow = Math.round(img.range.tl.row); // 0-based
+      const anchorCol = Math.round(img.range.tl.col); // 0-based
+      const tripIndex = (anchorRow + 1) - (headerRowNum + 1);
+      if(newTrips[tripIndex]){
+        if(anchorCol === 4) newTrips[tripIndex].entryImg = base64;
+        else if(anchorCol === 6) newTrips[tripIndex].exitImg = base64;
+      }
+    });
+
+    periodStartEl.value = periodStart;
+    periodEndEl.value = periodEnd;
+    trips = newTrips.length ? newTrips : [{ start: "", end: "", entryPage: "", exitPage: "" }];
+    render();
+    hideSaveReminder();
+  } catch(err){
+    console.error(err);
+    alert("تعذر قراءة الملف. تأكد أنه ملف إكسل صالح تم تصديره من هذه الأداة.");
+  }
+}
+
+document.getElementById('exportBtn').addEventListener('click', exportData);
+document.getElementById('reminderSaveBtn').addEventListener('click', exportData);
+document.getElementById('reminderDismissBtn').addEventListener('click', hideSaveReminder);
+document.getElementById('importInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if(file) importData(file);
+  e.target.value = "";
+});
+
+render();
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

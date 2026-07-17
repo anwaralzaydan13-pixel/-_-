@@ -216,7 +216,7 @@
   <div class="save-card">
     <div class="save-info">
       <strong>حفظ البيانات</strong>
-      يقوم الزر بتنزيل ملف إكسل يحتوي على كل بياناتك وصور الجوازات. بعض المتصفحات قد تضيف رقماً للاسم عند التنزيل المتكرر (مثل (1))، يمكنك حينها حذف النسخ القديمة يدوياً من مجلد التنزيلات.
+      يقوم الزر بتنزيل ملف إكسل يحتوي على كل بياناتك. بعض المتصفحات قد تضيف رقماً للاسم عند التنزيل المتكرر (مثل (1))، يمكنك حينها حذف النسخ القديمة يدوياً من مجلد التنزيلات، أو تفعيل خيار "السؤال أين يتم الحفظ" من إعدادات المتصفح لاستبدال الملف القديم مباشرة.
     </div>
     <div class="save-actions">
       <button class="btn" id="exportBtn">⬇️ حفظ نسخة إكسل</button>
@@ -438,7 +438,7 @@ document.getElementById('addTripBtn').addEventListener('click', () => {
 periodStartEl.addEventListener('input', render);
 periodEndEl.addEventListener('input', render);
 
-// ---- حفظ البيانات في ملف إكسل واستيرادها (بما في ذلك الصور) ----
+// ---- حفظ البيانات في ملف إكسل واستيرادها ----
 const saveReminderEl = document.getElementById('saveReminder');
 
 function showSaveReminder(){

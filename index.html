@@ -3,13 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>حاسبة الإقامة</title>
+<title>عدد أيام الإقامة</title>
 <link rel="manifest" href="manifest.json">
 <meta name="theme-color" content="#1F6F78">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="حاسبة الإقامة">
+<meta name="apple-mobile-web-app-title" content="عدد أيام الإقامة">
 <link rel="apple-touch-icon" href="icon-192.png">
 <link rel="icon" href="icon-192.png">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
@@ -67,14 +67,20 @@
   }
   input:focus{ outline: 2px solid var(--teal); outline-offset: 1px; }
 
+  .totals-grid{
+    display:grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
   .total-tile{
     position: relative;
     background: linear-gradient(135deg, var(--teal), var(--teal-dark));
     color: white;
     border-radius: 16px;
-    padding: 26px 20px;
+    padding: 20px 12px;
     text-align:center;
-    margin-bottom: 20px;
+    margin-bottom: 0;
     overflow: hidden;
   }
   .total-tile::before{
@@ -89,9 +95,9 @@
     background-position: 0 0, 0 14px, 14px -14px, -14px 0px;
     opacity: .5;
   }
-  .total-tile .num{ position:relative; font-size: 52px; font-weight: 900; line-height:1; font-variant-numeric: tabular-nums;}
-  .total-tile .lbl{ position:relative; font-size: 14px; margin-top: 6px; opacity: .9;}
-  .total-tile .note{ position:relative; font-size: 12px; margin-top: 10px; opacity: .75;}
+  .total-tile .num{ position:relative; font-size: 38px; font-weight: 900; line-height:1; font-variant-numeric: tabular-nums;}
+  .total-tile .lbl{ position:relative; font-size: 12px; margin-top: 6px; opacity: .9;}
+  .total-tile .note{ position:relative; font-size: 11px; margin-top: 8px; opacity: .75;}
 
   .trip{
     background: var(--card);
@@ -101,7 +107,45 @@
     margin-bottom: 10px;
     position: relative;
   }
+  .jalali-picker{
+    display:flex;
+    align-items:center;
+    width:100%;
+    padding: 0 10px;
+    border-radius: 9px;
+    border: 1px solid var(--line);
+    background: #FFFDF9;
+  }
+  .jalali-picker:focus-within{ outline: 2px solid var(--teal); outline-offset: 1px; }
+  .jalali-picker select{
+    flex:1;
+    min-width: 0;
+    padding: 10px 2px;
+    border: none;
+    background: transparent;
+    font-size: 14px;
+    color: var(--ink);
+    font-family: inherit;
+    appearance: none;
+    -webkit-appearance: none;
+    text-align: center;
+  }
+  .jalali-picker select:focus{ outline: none; }
+  .jalali-picker .sep{ color: var(--muted); font-size: 13px; }
+
   .trip .row{ margin-bottom: 8px; }
+  .trip .trip-number{
+    font-size: 15px;
+    font-weight: 800;
+    color: var(--teal-dark);
+    margin-bottom: 6px;
+    padding-left: 26px;
+  }
+  .trip .section-title{
+    font-size: 12px; font-weight: 700; color: var(--teal-dark);
+    margin: 10px 0 8px; padding-top: 8px; border-top: 1px dashed var(--line);
+  }
+  .trip .section-title:first-of-type{ margin-top: 24px; border-top: none; padding-top: 0; }
   .trip .days-badge{
     display:inline-block;
     font-size: 12px;
@@ -209,7 +253,7 @@
 <body>
 <div class="wrap">
   <header>
-    <div class="eyebrow">حاسبة الإقامة</div>
+    <div class="eyebrow">عدد أيام الإقامة</div>
     <div class="sub">حدّد فترة الماجستير ثم أضف كل رحلة إلى إيران — والحاسبة تحسب الأيام الفعلية داخل تلك الفترة، بدون احتساب التداخلات مرتين.</div>
   </header>
 
@@ -249,14 +293,21 @@
     </div>
   </div>
 
-  <div class="total-tile">
-    <div class="num" id="totalDays">0</div>
-    <div class="lbl">إجمالي الأيام في إيران</div>
-    <div class="note" id="totalNote">أضف رحلاتك أدناه</div>
+  <div class="totals-grid">
+    <div class="total-tile">
+      <div class="num" id="totalDaysIraq">0</div>
+      <div class="lbl">إجمالي الأيام في إيران بالختم العراقي</div>
+      <div class="note" id="totalNoteIraq">أضف رحلاتك أدناه</div>
+    </div>
+    <div class="total-tile">
+      <div class="num" id="totalDaysIran">0</div>
+      <div class="lbl">إجمالي الأيام في إيران بالختم الإيراني</div>
+      <div class="note" id="totalNoteIran">أضف رحلاتك أدناه</div>
+    </div>
   </div>
 
   <div id="overlapBanner" class="overlap-banner" style="display:none;">
-    ⚠️ بعض الرحلات متداخلة زمنياً — تم احتساب الأيام المشتركة مرة واحدة فقط في الإجمالي.
+    ⚠️ بعض الرحلات متداخلة زمنياً — تم احتساب الأيام المشتركة مرة واحدة فقط في كل إجمالي.
   </div>
 
   <div id="trips"></div>
@@ -267,13 +318,136 @@
 </div>
 
 <script>
+// ---- تحويل التقويم الفارسي (الجلالي) <-> الميلادي ----
+function jdiv(a, b){ return ~~(a / b); }
+function jmod(a, b){ return a - ~~(a / b) * b; }
+function jalCal(jy){
+  var breaks = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+  var bl = breaks.length, gy = jy + 621, leapJ = -14, jp = breaks[0], jm, jump = 0, leap, n, i;
+  for (i = 1; i < bl; i += 1) {
+    jm = breaks[i]; jump = jm - jp;
+    if (jy < jm) break;
+    leapJ = leapJ + jdiv(jump, 33) * 8 + jdiv(jmod(jump, 33), 4);
+    jp = jm;
+  }
+  n = jy - jp;
+  leapJ = leapJ + jdiv(n, 33) * 8 + jdiv(jmod(n, 33) + 3, 4);
+  if (jmod(jump, 33) === 4 && jump - n === 4) leapJ += 1;
+  var leapG = jdiv(gy, 4) - jdiv((jdiv(gy, 100) + 1) * 3, 4) - 150;
+  var march = 20 + leapJ - leapG;
+  if (jump - n < 6) n = n - jump + jdiv(jump + 4, 33) * 33;
+  leap = jmod(jmod(n + 1, 33) - 1, 4);
+  if (leap === -1) leap = 4;
+  return { leap: leap, gy: gy, march: march };
+}
+function isLeapJalaaliYear(jy){ return jalCal(jy).leap === 0; }
+function jalaaliMonthLength(jy, jm){
+  if (jm <= 6) return 31;
+  if (jm <= 11) return 30;
+  return isLeapJalaaliYear(jy) ? 30 : 29;
+}
+function g2d(gy, gm, gd){
+  var d = jdiv((gy + jdiv(gm - 8, 6) + 100100) * 1461, 4) + jdiv(153 * jmod(gm + 9, 12) + 2, 5) + gd - 34840408;
+  d = d - jdiv(jdiv(gy + 100100 + jdiv(gm - 8, 6), 100) * 3, 4) + 752;
+  return d;
+}
+function d2g(jdn){
+  var j, i, gd, gm, gy;
+  j = 4 * jdn + 139361631;
+  j = j + jdiv(jdiv(4 * jdn + 183187720, 146097) * 3, 4) * 4 - 3908;
+  i = jdiv(jmod(j, 1461), 4) * 5 + 308;
+  gd = jdiv(jmod(i, 153), 5) + 1;
+  gm = jmod(jdiv(i, 153), 12) + 1;
+  gy = jdiv(j, 1461) - 100100 + jdiv(8 - gm, 6);
+  return { gy: gy, gm: gm, gd: gd };
+}
+function j2d(jy, jm, jd){
+  var r = jalCal(jy);
+  return g2d(r.gy, 3, r.march) + (jm - 1) * 31 - jdiv(jm, 7) * (jm - 7) + jd - 1;
+}
+function d2j(jdn){
+  var gy = d2g(jdn).gy, jy = gy - 621, r = jalCal(jy), jdn1f = g2d(gy, 3, r.march), jd, jm, k;
+  k = jdn - jdn1f;
+  if (k >= 0) {
+    if (k <= 185) { jm = 1 + jdiv(k, 31); jd = jmod(k, 31) + 1; return { jy: jy, jm: jm, jd: jd }; }
+    else { k -= 186; }
+  } else { jy -= 1; k += 179; if (r.leap === 1) k += 1; }
+  jm = 7 + jdiv(k, 30); jd = jmod(k, 30) + 1;
+  return { jy: jy, jm: jm, jd: jd };
+}
+function jalaaliToGregorian(jy, jm, jd){
+  var g = d2g(j2d(jy, jm, jd));
+  return [g.gy, g.gm, g.gd];
+}
+function gregorianToJalaali(gy, gm, gd){
+  var j = d2j(g2d(gy, gm, gd));
+  return [j.jy, j.jm, j.jd];
+}
+const persianMonths = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+
+function jalaliPickerHtml(idx, field, jy, jm, jd){
+  const days = (jy && jm) ? jalaaliMonthLength(parseInt(jy), parseInt(jm)) : 31;
+  let dayOpts = `<option value="">يوم</option>`;
+  for(let d=1; d<=days; d++){
+    dayOpts += `<option value="${d}" ${String(d)===String(jd)?'selected':''}>${d}</option>`;
+  }
+  let monthOpts = `<option value="">شهر</option>`;
+  persianMonths.forEach((name,i)=>{
+    const mnum = i+1;
+    monthOpts += `<option value="${mnum}" ${String(mnum)===String(jm)?'selected':''}>${name}</option>`;
+  });
+  let yearOpts = `<option value="">سنة</option>`;
+  for(let y=1390;y<=1412;y++){
+    yearOpts += `<option value="${y}" ${String(y)===String(jy)?'selected':''}>${y}</option>`;
+  }
+  return `<div class="jalali-picker" dir="ltr">
+    <select class="jalali-select" data-idx="${idx}" data-field="${field}" data-part="jd">${dayOpts}</select>
+    <span class="sep">/</span>
+    <select class="jalali-select" data-idx="${idx}" data-field="${field}" data-part="jm">${monthOpts}</select>
+    <span class="sep">/</span>
+    <select class="jalali-select" data-idx="${idx}" data-field="${field}" data-part="jy">${yearOpts}</select>
+  </div>`;
+}
+function recomputeJalaliField(trip, field){
+  const jy = trip[field+'_jy'], jm = trip[field+'_jm'], jd = trip[field+'_jd'];
+  if(jy && jm && jd){
+    const [gy, gm, gd] = jalaaliToGregorian(parseInt(jy), parseInt(jm), parseInt(jd));
+    trip[field] = `${gy}-${String(gm).padStart(2,'0')}-${String(gd).padStart(2,'0')}`;
+  } else {
+    trip[field] = "";
+  }
+}
+function jalaliDisplayString(trip, field){
+  const jy = trip[field+'_jy'], jm = trip[field+'_jm'], jd = trip[field+'_jd'];
+  if(!jy || !jm || !jd) return "";
+  return `${jy}/${String(jm).padStart(2,'0')}/${String(jd).padStart(2,'0')}`;
+}
+function parseJalaliDisplayString(str){
+  if(!str) return null;
+  const m = String(str).trim().match(/^(\d{3,4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if(!m) return null;
+  return { jy: m[1], jm: String(parseInt(m[2])), jd: String(parseInt(m[3])) };
+}
+
 let trips = [
-  { start: "", end: "", entryPage: "", exitPage: "" }
+  { iraqExitDate: "", iraqExitPage: "",
+    iraqEntryDate: "", iraqEntryPage: "",
+    iranEntryDate: "", iranEntryDate_jy: "", iranEntryDate_jm: "", iranEntryDate_jd: "", iranEntryPage: "",
+    iranExitDate: "", iranExitDate_jy: "", iranExitDate_jm: "", iranExitDate_jd: "", iranExitPage: "" }
 ];
 
+const tripOrdinals = ["الأولى","الثانية","الثالثة","الرابعة","الخامسة","السادسة","السابعة","الثامنة","التاسعة","العاشرة",
+  "الحادية عشرة","الثانية عشرة","الثالثة عشرة","الرابعة عشرة","الخامسة عشرة","السادسة عشرة","السابعة عشرة","الثامنة عشرة","التاسعة عشرة","العشرون"];
+function tripLabel(idx){
+  if(idx < tripOrdinals.length) return `الرحلة ${tripOrdinals[idx]}`;
+  return `الرحلة رقم ${idx + 1}`;
+}
+
 const tripsEl = document.getElementById('trips');
-const totalDaysEl = document.getElementById('totalDays');
-const totalNoteEl = document.getElementById('totalNote');
+const totalDaysIraqEl = document.getElementById('totalDaysIraq');
+const totalNoteIraqEl = document.getElementById('totalNoteIraq');
+const totalDaysIranEl = document.getElementById('totalDaysIran');
+const totalNoteIranEl = document.getElementById('totalNoteIran');
 const overlapBanner = document.getElementById('overlapBanner');
 const periodStartEl = document.getElementById('periodStart');
 const periodEndEl = document.getElementById('periodEnd');
@@ -307,13 +481,13 @@ function render(){
     const div = document.createElement('div');
     div.className = 'trip';
 
-    const start = parseDate(trip.start);
-    const end = parseDate(trip.end);
+    const start = parseDate(trip.iranEntryDate);
+    const end = parseDate(trip.iranExitDate);
     let badgeHtml = "";
     let warnHtml = "";
 
     if(start && end && start > end){
-      warnHtml = `<div class="warn">تاريخ الخروج قبل تاريخ الدخول</div>`;
+      warnHtml = `<div class="warn">تاريخ الخروج من إيران قبل تاريخ الدخول إليها</div>`;
     } else if(start && end){
       const clamped = clampToPeriod(start, end);
       if(clamped){
@@ -326,24 +500,47 @@ function render(){
 
     div.innerHTML = `
       ${trips.length > 1 ? `<button class="remove-btn" data-idx="${idx}" title="حذف">✕</button>` : ""}
+      <div class="trip-number">${tripLabel(idx)}</div>
+      <div class="section-title">🇮🇶 الختم العراقي (تقويم ميلادي)</div>
       <div class="row">
         <div>
-          <label class="field-label">تاريخ الدخول</label>
-          <input type="date" data-idx="${idx}" data-field="start" value="${trip.start || ""}">
+          <label class="field-label">خروج من الجانب العراقي</label>
+          <input type="date" data-idx="${idx}" data-field="iraqExitDate" value="${trip.iraqExitDate || ""}">
         </div>
         <div>
-          <label class="field-label">تاريخ الخروج</label>
-          <input type="date" data-idx="${idx}" data-field="end" value="${trip.end || ""}">
+          <label class="field-label">دخول إلى الجانب العراقي</label>
+          <input type="date" data-idx="${idx}" data-field="iraqEntryDate" value="${trip.iraqEntryDate || ""}">
         </div>
       </div>
       <div class="row">
         <div>
-          <label class="field-label">رقم صفحة ختم الدخول</label>
-          <input type="text" class="page-input" data-idx="${idx}" data-field="entryPage" placeholder="مثال: 12" value="${trip.entryPage || ""}">
+          <label class="field-label">رقم صفحة ختم الخروج (عراقي)</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="iraqExitPage" placeholder="مثال: 12" value="${trip.iraqExitPage || ""}">
         </div>
         <div>
-          <label class="field-label">رقم صفحة ختم الخروج</label>
-          <input type="text" class="page-input" data-idx="${idx}" data-field="exitPage" placeholder="مثال: 13" value="${trip.exitPage || ""}">
+          <label class="field-label">رقم صفحة ختم الدخول (عراقي)</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="iraqEntryPage" placeholder="مثال: 15" value="${trip.iraqEntryPage || ""}">
+        </div>
+      </div>
+      <div class="section-title">🇮🇷 الختم الإيراني (تقويم فارسي)</div>
+      <div class="row">
+        <div>
+          <label class="field-label">دخول إلى الجانب الإيراني</label>
+          ${jalaliPickerHtml(idx, 'iranEntryDate', trip.iranEntryDate_jy, trip.iranEntryDate_jm, trip.iranEntryDate_jd)}
+        </div>
+        <div>
+          <label class="field-label">خروج من الجانب الإيراني</label>
+          ${jalaliPickerHtml(idx, 'iranExitDate', trip.iranExitDate_jy, trip.iranExitDate_jm, trip.iranExitDate_jd)}
+        </div>
+      </div>
+      <div class="row">
+        <div>
+          <label class="field-label">رقم صفحة ختم الدخول (إيراني)</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="iranEntryPage" placeholder="مثال: 13" value="${trip.iranEntryPage || ""}">
+        </div>
+        <div>
+          <label class="field-label">رقم صفحة ختم الخروج (إيراني)</label>
+          <input type="text" class="page-input" data-idx="${idx}" data-field="iranExitPage" placeholder="مثال: 14" value="${trip.iranExitPage || ""}">
         </div>
       </div>
       ${badgeHtml}
@@ -352,12 +549,24 @@ function render(){
     tripsEl.appendChild(div);
   });
 
-  // date inputs
+  // date inputs (ميلادي)
   tripsEl.querySelectorAll('input[type=date]').forEach(inp => {
     inp.addEventListener('input', (e) => {
       const idx = parseInt(e.target.getAttribute('data-idx'));
       const field = e.target.getAttribute('data-field');
       trips[idx][field] = e.target.value;
+      render();
+    });
+  });
+
+  // jalali selects (فارسي)
+  tripsEl.querySelectorAll('.jalali-select').forEach(sel => {
+    sel.addEventListener('change', (e) => {
+      const idx = parseInt(e.target.getAttribute('data-idx'));
+      const field = e.target.getAttribute('data-field');
+      const part = e.target.getAttribute('data-part');
+      trips[idx][field + '_' + part] = e.target.value;
+      recomputeJalaliField(trips[idx], field);
       render();
     });
   });
@@ -383,11 +592,11 @@ function render(){
   computeTotal();
 }
 
-function computeTotal(){
+function computeOneTotal(startField, endField){
   let intervals = [];
   trips.forEach(trip => {
-    const start = parseDate(trip.start);
-    const end = parseDate(trip.end);
+    const start = parseDate(trip[startField]);
+    const end = parseDate(trip[endField]);
     if(start && end && start <= end){
       const clamped = clampToPeriod(start, end);
       if(clamped) intervals.push([clamped.s.getTime(), clamped.e.getTime()]);
@@ -417,20 +626,35 @@ function computeTotal(){
     total += Math.round((e - s) / (1000*60*60*24));
   });
 
-  totalDaysEl.textContent = total;
-  overlapBanner.style.display = hadOverlap ? 'block' : 'none';
+  return { total, merged, intervals, hadOverlap };
+}
 
+function applyTotalToUI(result, numEl, noteEl){
+  numEl.textContent = result.total;
   if(!periodStartEl.value || !periodEndEl.value){
-    totalNoteEl.textContent = "حدّد فترة الماجستير أعلاه لحساب دقيق";
-  } else if(intervals.length === 0){
-    totalNoteEl.textContent = "أضف رحلاتك أدناه";
+    noteEl.textContent = "حدّد فترة الماجستير أعلاه لحساب دقيق";
+  } else if(result.intervals.length === 0){
+    noteEl.textContent = "أضف رحلاتك أدناه";
   } else {
-    totalNoteEl.textContent = `${merged.length} فترة/فترات محتسبة`;
+    noteEl.textContent = `${result.merged.length} فترة/فترات محتسبة`;
   }
 }
 
+function computeTotal(){
+  const iraqResult = computeOneTotal('iraqExitDate', 'iraqEntryDate');
+  const iranResult = computeOneTotal('iranEntryDate', 'iranExitDate');
+
+  applyTotalToUI(iraqResult, totalDaysIraqEl, totalNoteIraqEl);
+  applyTotalToUI(iranResult, totalDaysIranEl, totalNoteIranEl);
+
+  overlapBanner.style.display = (iraqResult.hadOverlap || iranResult.hadOverlap) ? 'block' : 'none';
+}
+
 document.getElementById('addTripBtn').addEventListener('click', () => {
-  trips.push({ start: "", end: "", entryPage: "", exitPage: "" });
+  trips.push({ iraqExitDate: "", iraqExitPage: "",
+               iraqEntryDate: "", iraqEntryPage: "",
+               iranEntryDate: "", iranEntryDate_jy: "", iranEntryDate_jm: "", iranEntryDate_jd: "", iranEntryPage: "",
+               iranExitDate: "", iranExitDate_jy: "", iranExitDate_jm: "", iranExitDate_jd: "", iranExitPage: "" });
   render();
   showSaveReminder();
 });
@@ -454,11 +678,15 @@ async function buildWorkbookBuffer(){
 
   ws.columns = [
     { width: 6 },
-    { width: 16 },
-    { width: 16 },
-    { width: 16 },
-    { width: 16 },
-    { width: 16 },
+    { width: 15 },
+    { width: 15 },
+    { width: 13 },
+    { width: 13 },
+    { width: 12 },
+    { width: 15 },
+    { width: 15 },
+    { width: 13 },
+    { width: 13 },
   ];
 
   const headerFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1F6F78' } };
@@ -476,7 +704,14 @@ async function buildWorkbookBuffer(){
   r2.getCell(2).alignment = { horizontal: 'right' };
   ws.addRow([]);
 
-  const headerRow = ws.addRow(["#", "تاريخ الدخول", "تاريخ الخروج", "عدد الأيام", "رقم صفحة الدخول", "رقم صفحة الخروج"]);
+  const headerRow = ws.addRow([
+    "#",
+    "خروج عراقي (ميلادي)", "دخول عراقي (ميلادي)",
+    "عدد الأيام",
+    "صفحة خروج عراقي", "صفحة دخول عراقي",
+    "دخول إيراني (فارسي)", "خروج إيراني (فارسي)",
+    "صفحة دخول إيراني", "صفحة خروج إيراني"
+  ]);
   headerRow.eachCell(cell => {
     cell.fill = headerFill;
     cell.font = headerFont;
@@ -486,8 +721,8 @@ async function buildWorkbookBuffer(){
 
   let total = 0;
   trips.forEach((trip, idx) => {
-    const start = parseDate(trip.start);
-    const end = parseDate(trip.end);
+    const start = parseDate(trip.iranEntryDate);
+    const end = parseDate(trip.iranExitDate);
     let days = "";
     if(start && end && start <= end){
       const clamped = clampToPeriod(start, end);
@@ -496,7 +731,14 @@ async function buildWorkbookBuffer(){
         total += days;
       }
     }
-    const row = ws.addRow([idx + 1, trip.start || "", trip.end || "", days, trip.entryPage || "", trip.exitPage || ""]);
+    const row = ws.addRow([
+      idx + 1,
+      trip.iraqExitDate || "", trip.iraqEntryDate || "",
+      days,
+      trip.iraqExitPage || "", trip.iraqEntryPage || "",
+      jalaliDisplayString(trip, 'iranEntryDate'), jalaliDisplayString(trip, 'iranExitDate'),
+      trip.iranEntryPage || "", trip.iranExitPage || ""
+    ]);
     row.eachCell(cell => {
       cell.border = fullBorder;
       cell.alignment = { horizontal: 'center', vertical: 'middle' };
@@ -561,35 +803,30 @@ async function importData(file){
       const row = ws.getRow(r);
       const first = (row.getCell(1).text || "").trim();
       if(!first || first === "الإجمالي") break;
-      newTrips.push({
-        start: (row.getCell(2).text || "").trim(),
-        end: (row.getCell(3).text || "").trim(),
-        entryImg: null,
-        exitImg: null,
-        entryPage: (row.getCell(6).text || "").trim(),
-        exitPage: (row.getCell(8).text || "").trim()
-      });
+      const jEntry = parseJalaliDisplayString((row.getCell(7).text || "").trim());
+      const jExit = parseJalaliDisplayString((row.getCell(8).text || "").trim());
+      const trip = {
+        iraqExitDate: (row.getCell(2).text || "").trim(),
+        iraqEntryDate: (row.getCell(3).text || "").trim(),
+        iraqExitPage: (row.getCell(5).text || "").trim(),
+        iraqEntryPage: (row.getCell(6).text || "").trim(),
+        iranEntryDate: "", iranEntryDate_jy: jEntry ? jEntry.jy : "", iranEntryDate_jm: jEntry ? jEntry.jm : "", iranEntryDate_jd: jEntry ? jEntry.jd : "",
+        iranExitDate: "", iranExitDate_jy: jExit ? jExit.jy : "", iranExitDate_jm: jExit ? jExit.jm : "", iranExitDate_jd: jExit ? jExit.jd : "",
+        iranEntryPage: (row.getCell(9).text || "").trim(),
+        iranExitPage: (row.getCell(10).text || "").trim()
+      };
+      recomputeJalaliField(trip, 'iranEntryDate');
+      recomputeJalaliField(trip, 'iranExitDate');
+      newTrips.push(trip);
       r++;
     }
 
-    // استخراج الصور وربطها بالرحلة الصحيحة بحسب موضعها
-    const images = ws.getImages ? ws.getImages() : [];
-    images.forEach(img => {
-      const media = wb.model.media.find(m => m.index === img.imageId) || wb.model.media[img.imageId];
-      if(!media || !media.buffer) return;
-      const base64 = `data:image/${media.extension};base64,${arrayBufferToBase64(media.buffer)}`;
-      const anchorRow = Math.round(img.range.tl.row); // 0-based
-      const anchorCol = Math.round(img.range.tl.col); // 0-based
-      const tripIndex = (anchorRow + 1) - (headerRowNum + 1);
-      if(newTrips[tripIndex]){
-        if(anchorCol === 4) newTrips[tripIndex].entryImg = base64;
-        else if(anchorCol === 6) newTrips[tripIndex].exitImg = base64;
-      }
-    });
-
     periodStartEl.value = periodStart;
     periodEndEl.value = periodEnd;
-    trips = newTrips.length ? newTrips : [{ start: "", end: "", entryPage: "", exitPage: "" }];
+    trips = newTrips.length ? newTrips : [{ iraqExitDate: "", iraqExitPage: "",
+                                             iraqEntryDate: "", iraqEntryPage: "",
+                                             iranEntryDate: "", iranEntryDate_jy: "", iranEntryDate_jm: "", iranEntryDate_jd: "", iranEntryPage: "",
+                                             iranExitDate: "", iranExitDate_jy: "", iranExitDate_jm: "", iranExitDate_jd: "", iranExitPage: "" }];
     render();
     hideSaveReminder();
   } catch(err){
